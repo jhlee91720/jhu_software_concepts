@@ -28,23 +28,23 @@
         <!--Navigation bar-->
         <nav class = "top-nav">
             <ul class = 'menu'>
-                <li><a class = "active" href="{{ url_for('pages.home') }}">HOME</a></li>
+                <li><a href="{{ url_for('pages.home') }}">HOME</a></li>
                 <li><a href="{{ url_for('pages.project') }}">PROJECT</a></li>
-                <li><a href="{{ url_for('pages.contact') }}">CONTACT</a></li>
+                <li><a class = "active" href="{{ url_for('pages.contact') }}">CONTACT</a></li>
             </ul>
         </nav>
         
         <!--setting the boundaries of the screen: "container" for narrow width-->
         <div class="container">
 
-            <!--Profile Picture: because the picture is long vertically, It is better to put before the headings of the first page-->
-            <img src= "{{url_for('static', filename='profile_pic.jpg')}}" align="right" style="width: 461px; height: 600px;"/>
 
-            <!--Contents the first page of the website-->
-            <h1 class = "mb-3">Hi! I am Joo Hyun 👋🏻</h1>
-            <h3 class = "mb-5">Academic Director at BES</h3>
-            <p> Hi, my name is Joo Hyun Lee, and I currently work as an Academic Director at a secondary international school in Seoul, South Korea. I am pursuing a Master of Science in Data Science at Johns Hopkins University to transition my career into bioinformatics. With a Bachelor's degree in Biomolecular Science from New York University, I hope to strengthen my ability to analyze large-scale datasets and apply data science skills to biological and healthcare-related research.</p>
-        
+
+
+
+
+
+
+            
         </div>
     </body>
 </html>

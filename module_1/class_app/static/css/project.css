@@ -39,16 +39,3 @@ body {
   font-weight: 800;
   text-decoration: underline;
 }
-
-/* formatting what's inside .container*/
-.container {
-    padding-top: 120px;    /* to keep it below nav bar  */
-} 
-
-.container h1, .container h3, .container p {
-  max-width: 750px;           /* limits the width of text for better readability */
-}
-
-.container p {                  /*increases the font size of paragraph*/
-  font-size: 20px;
-}

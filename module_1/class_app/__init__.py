@@ -1,5 +1,5 @@
 from flask import Flask
-from class_app.pages import pages
+from pages import pages
 
 
 def create_app():
