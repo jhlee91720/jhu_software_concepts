@@ -1,21 +1,22 @@
+# OS / editor junk
 .DS_Store
+
+# Python cache
 __pycache__/
 *.pyc
+
+# Virtual environments
 .venv/
+venv/
+
+# Big model files (do NOT push)
 module_2/llm_hosting/models/
 *.gguf
-module_2/raw_survey_page.html
-raw_survey_page.html
+
+# Raw HTML (do NOT push)
 *.html
+module_2/raw_survey_page.html
 
-echo "*.jsonl" >> .gitignore
-echo "applicant_data.json" >> .gitignore
-echo "out.jsonl" >> .gitignore
-echo "*.html" >> .gitignore
-
-echo "" >> .gitignore
-echo "# generated outputs" >> .gitignore
-echo "module_2/applicant_data.jsonl" >> .gitignore
-echo "module_2/applicant_data.json" >> .gitignore
-echo "module_2/out.jsonl" >> .gitignore
-echo "*.html" >> .gitignore
+# Error logs (do NOT push)
+*.err
+module_2/out_*.err
