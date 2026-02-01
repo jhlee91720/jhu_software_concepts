@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 module_2/llm_hosting/models/
 *.gguf
+module_2/raw_survey_page.html
+raw_survey_page.html
+*.html
