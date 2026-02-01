@@ -2,141 +2,138 @@ import json
 import re
 
 
-def _clean_text(s: str) -> str:
+def load_json(filename):
+    with open(filename, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_json(data, filename):
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def load_canon_list(filename):
+    canon = []
+    with open(filename, "r", encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if s == "":
+                continue
+            if s.startswith("#"):
+                continue
+            canon.append(s)
+    return canon
+
+
+def normalize_text(s):
+    """
+    Normalize spacing/case.
+    Only uses string methods + regex.
+    """
     if s is None:
         return ""
-    return " ".join(s.replace("\n", " ").replace("\t", " ").split()).strip()
+
+    s = str(s)
+    s = s.replace("\xa0", " ")
+    s = s.strip()
+    s = re.sub(r"\s+", " ", s)
+    return s
 
 
-def _none_if_empty(s: str):
-    s2 = _clean_text(s)
-    return None if s2 == "" else s2
-
-
-def _extract_scores_and_flags(comment: str) -> dict:
+def canon_key(s):
     """
-    Extract optional fields from messy comments using regex.
-    Keeps it conservative: if not found, return None.
+    Key used for matching canon values.
+    Lowercase + remove non-alphanumeric.
     """
-    c = _clean_text(comment)
-
-    # GPA patterns (examples: "GPA 3.8", "GPA: 3.72/4.0")
-    gpa = None
-    m = re.search(r"\bGPA\b\s*[:=]?\s*([0-4](?:\.\d{1,3})?)", c, re.IGNORECASE)
-    if m:
-        gpa = m.group(1)
-
-    # GRE total (examples: "GRE 320", "GRE: 327")
-    gre_total = None
-    m = re.search(r"\bGRE\b\s*[:=]?\s*(\d{3})\b", c, re.IGNORECASE)
-    if m:
-        gre_total = m.group(1)
-
-    # GRE Verbal (examples: "V 160", "Verbal: 158", "GRE V: 162")
-    gre_v = None
-    m = re.search(r"\b(?:GRE\s*)?(?:V|Verbal)\b\s*[:=]?\s*(\d{2,3})\b", c, re.IGNORECASE)
-    if m:
-        gre_v = m.group(1)
-
-    # GRE Quant (examples: "Q 167", "Quant: 165")
-    gre_q = None
-    m = re.search(r"\b(?:GRE\s*)?(?:Q|Quant|Quantitative)\b\s*[:=]?\s*(\d{2,3})\b", c, re.IGNORECASE)
-    if m:
-        gre_q = m.group(1)
-
-    # GRE AW (examples: "AW 4.5", "AWA: 3.0", "Writing 4.0")
-    gre_aw = None
-    m = re.search(r"\b(?:AW|AWA|Writing)\b\s*[:=]?\s*([0-6](?:\.\d)?)\b", c, re.IGNORECASE)
-    if m:
-        gre_aw = m.group(1)
-
-    # International/American (very heuristic)
-    intl = None
-    if re.search(r"\binternational\b", c, re.IGNORECASE):
-        intl = "International"
-    elif re.search(r"\bamerican\b|\bus citizen\b|\bdomestic\b", c, re.IGNORECASE):
-        intl = "American"
-
-    # Semester/year start (examples: "Fall 2025", "Spring 2026")
-    semester_start = None
-    m = re.search(r"\b(Fall|Spring|Summer|Winter)\s+(20\d{2})\b", c, re.IGNORECASE)
-    if m:
-        semester_start = f"{m.group(1).title()} {m.group(2)}"
-
-    # Masters/PhD (heuristic)
-    degree = None
-    if re.search(r"\bphd\b|\bph\.d\b|\bdoctor", c, re.IGNORECASE):
-        degree = "PhD"
-    elif re.search(r"\bmasters\b|\bm\.s\b|\bms\b|\bma\b|\bmeng\b", c, re.IGNORECASE):
-        degree = "Masters"
-
-    return {
-        "gpa": gpa,
-        "gre_score": gre_total,
-        "gre_v_score": gre_v,
-        "gre_q_score": gre_q,
-        "gre_aw": gre_aw,
-        "international_or_american": intl,
-        "semester_and_year_start": semester_start,
-        "masters_or_phd": degree,
-    }
+    s = normalize_text(s).lower()
+    s = re.sub(r"[^a-z0-9]+", "", s)
+    return s
 
 
-def clean_data(raw_entries: list) -> list:
+def match_canon(value, canon_list):
+    """
+    Exact match to canonical list AFTER normalization.
+    No fuzzy matching (no difflib allowed).
+    If not found, return normalized value as fallback.
+    """
+    value = normalize_text(value)
+    if value == "":
+        return ""
+
+    value_k = canon_key(value)
+
+    for c in canon_list:
+        if canon_key(c) == value_k:
+            return c
+
+    return value
+
+
+def clean_data(rows, canon_programs, canon_universities):
+    """
+    Part E:
+    - Use LLM output fields if present
+    - Create clean_program / clean_university fields
+    - Ensure consistent formatting / no strange whitespace
+    """
     cleaned = []
 
-    for e in raw_entries:
-        # Pull expected fields (and sanitize)
-        program = _none_if_empty(e.get("program_name", ""))
-        university = _none_if_empty(e.get("university", ""))
-        status = _none_if_empty(e.get("applicant_status", ""))
-        decision_date = _none_if_empty(e.get("decision_date", ""))
-        date_added = _none_if_empty(e.get("date_added", ""))
-        entry_url = _none_if_empty(e.get("entry_url", ""))
-        comments = _none_if_empty(e.get("comments", ""))
+    for r in rows:
+        # Use LLM output when available
+        llm_prog = normalize_text(r.get("llm-generated-program", ""))
+        llm_uni = normalize_text(r.get("llm-generated-university", ""))
 
-        # Extract optional fields from comments
-        extracted = _extract_scores_and_flags(comments or "")
+        # Fall back to original fields if LLM empty
+        raw_prog = normalize_text(r.get("program", ""))
+        raw_uni = normalize_text(r.get("university", ""))
 
-        cleaned_entry = {
-            "program_name": program,
-            "university": university,
-            "comments": comments,
-            "date_added_to_gradcafe": date_added,
-            "url_link_to_applicant_entry": entry_url,
-            "applicant_status": status,
-            # If your professor expects separate accept/reject dates, we store decision_date
-            # and keep it as None when missing.
-            "acceptance_or_rejection_date": decision_date,
-            "semester_and_year_of_program_start": extracted["semester_and_year_start"],
-            "international_or_american_student": extracted["international_or_american"],
-            "gre_score": extracted["gre_score"],
-            "gre_v_score": extracted["gre_v_score"],
-            "gre_aw": extracted["gre_aw"],
-            "gpa": extracted["gpa"],
-            "masters_or_phd": extracted["masters_or_phd"],
-        }
+        chosen_prog = llm_prog if llm_prog != "" else raw_prog
+        chosen_uni = llm_uni if llm_uni != "" else raw_uni
 
-        cleaned.append(cleaned_entry)
+        clean_prog = match_canon(chosen_prog, canon_programs)
+        clean_uni = match_canon(chosen_uni, canon_universities)
+
+        out = dict(r)  # copy original row
+
+        # overwrite / ensure fields are normalized
+        out["program"] = raw_prog
+        out["university"] = raw_uni
+
+        # keep llm fields normalized
+        out["llm-generated-program"] = llm_prog
+        out["llm-generated-university"] = llm_uni
+
+        # add cleaned final fields
+        out["clean_program"] = clean_prog
+        out["clean_university"] = clean_uni
+
+        cleaned.append(out)
 
     return cleaned
 
 
-def save_data(data: list, out_path: str) -> None:
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"[save] wrote {len(data)} entries to {out_path}")
-
-
-def load_data(path: str) -> list:
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
 def main():
-    raw = load_data("applicant_data.json")
-    cleaned = clean_data(raw)
-    save_data(cleaned, "llm_extend_applicant_data.json")
+    # IMPORTANT: run clean.py from repo root, like:
+    # python module_2/clean.py
+
+    in_file = "module_2/out_10.json"
+    out_file = "module_2/llm_extend_applicant_data_10.json"
+
+    canon_programs_file = "module_2/llm_hosting/canon_programs.txt"
+    canon_universities_file = "module_2/llm_hosting/canon_universities.txt"
+
+    rows = load_json(in_file)
+    canon_programs = load_canon_list(canon_programs_file)
+    canon_universities = load_canon_list(canon_universities_file)
+
+    cleaned = clean_data(rows, canon_programs, canon_universities)
+
+    save_json(cleaned, out_file)
+
+    print("Input rows:", len(rows))
+    print("Output rows:", len(cleaned))
+    print("Wrote:", out_file)
+    print("Example keys:", list(cleaned[0].keys()))
 
 
 if __name__ == "__main__":
