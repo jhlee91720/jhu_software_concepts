@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+module_2/llm_hosting/models/
+*.gguf
