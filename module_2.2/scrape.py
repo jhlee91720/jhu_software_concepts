@@ -61,15 +61,12 @@ def parse_survey_page(html, limit=20):
         if len(tds) != 5:
             continue
 
-        # Find the /result/ link in this row
-        a = tr.find("a", href=True)
+        # Find a /result/ link specifically inside this row (avoid other links)
+        a = tr.find("a", href=lambda x: x and x.startswith("/result/"))
         if not a:
             continue
 
         href = a["href"].strip()
-        if not href.startswith("/result/"):
-            continue
-
         full_url = urllib.parse.urljoin(BASE_URL, href)
         if full_url in seen:
             continue
@@ -274,7 +271,81 @@ def debug_print_first_row_cells(html):
             text = td.get_text(" ", strip=True)
             print("CELL", i, ":", text)
         break
+
+
+def load_data(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+    except Exception as e:
+        print("load_data error:", str(e))
+        return []
+
+
+def save_data(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def scrape_many_pages(target_records=500, start_page=1, max_pages=10, checkpoint_every_pages=2):
+
+    """
+    Scrape multiple survey pages, dedupe by URL, and save progress to applicant_data.json.
+    Start small (e.g., 3 pages / 100 records) before scaling to 30,000.
+    """
+    output_path = "module_2.2/applicant_data.json"
+
+    # Load existing data so you can resume
+    existing = load_data(output_path)
+    by_url = {rec["url"]: rec for rec in existing if "url" in rec}
+
+    print("Loaded existing records:", len(by_url))
+
+    for page in range(start_page, max_pages + 1):
+        page_url = urllib.parse.urljoin(BASE_URL, f"/survey/?page={page}")
+        print("\nSCRAPING PAGE:", page, page_url)
+
+        if not check_robots(page_url):
+            print("Robots disallows:", page_url)
+            break
+
+        html = fetch_html(page_url)
+        if not html:
+            print("No HTML for page:", page)
+            continue
+
+        new_records = parse_survey_page(html, limit=1000)  # get all rows on that page
+        print("Parsed records from page:", len(new_records))
+        added = 0
         
+        for rec in new_records:
+            u = rec.get("url", "")
+            if not u:
+                continue
+            if u in by_url:
+                continue
+            by_url[u] = rec
+            added += 1
+
+        print("Added from this page:", added)
+        print("Total unique records:", len(by_url))
+
+        # checkpoint save
+        if page % checkpoint_every_pages == 0:
+            save_data(output_path, list(by_url.values()))
+            print("Checkpoint saved:", output_path)
+
+        if len(by_url) >= target_records:
+            print("Reached target_records:", target_records)
+            break
+
+    # final save
+    save_data(output_path, list(by_url.values()))
+    print("Final saved:", output_path, "records:", len(by_url))
+
+   
 def scrape_one_page():
     """
     First test: download ONE survey page and save html locally.
@@ -336,4 +407,5 @@ def scrape_one_page():
             print("Robots.txt does not allow fetching result page:", test_url)
 
 if __name__ == "__main__":
-    scrape_one_page()
+    scrape_many_pages(target_records=999999, start_page=15, max_pages=15, checkpoint_every_pages=1)
+
