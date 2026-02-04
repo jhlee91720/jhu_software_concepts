@@ -306,11 +306,12 @@ def scrape_one_page():
     print("Saved:", "module_2.2/sample_applicant_data.json", "records:", len(sample))
     
         # Enrich a small subset with detail-page fields (start with 5)
-    enriched = enrich_with_detail(sample, max_records=5, delay_seconds=1.0)
-    with open("module_2.2/sample_applicant_data_with_detail.json", "w", encoding="utf-8") as f:
+    enriched = enrich_with_detail(sample, max_records=20, delay_seconds=1.0)
+    with open("module_2.2/sample_applicant_data_with_detail_20.json", "w", encoding="utf-8") as f:
         json.dump(enriched, f, ensure_ascii=False, indent=2)
 
-    print("Saved:", "module_2.2/sample_applicant_data_with_detail.json", "records:", len(enriched))
+    print("Saved:", "module_2.2/sample_applicant_data_with_detail_20.json", "records:", len(enriched))
+
 
 
     # --- Detail-page test: fetch and parse ONE result page ---
