@@ -421,7 +421,6 @@ def scrape_one_page():
             soup = BeautifulSoup(detail_html, "html.parser")
             text_preview = soup.get_text(" ", strip=True)
             print("DETAIL TEXT PREVIEW:", text_preview[:400])
-            
             detail_fields = parse_result_page(detail_html)
             print("DETAIL TEST URL:", test_url)
             print("DETAIL FIELDS:", detail_fields)

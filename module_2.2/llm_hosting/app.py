@@ -302,7 +302,7 @@ def _cli_process_file(
     assert sink is not None  # for type-checkers
 
     try:
-        for row in rows:
+        for i, row in enumerate(rows, start=1):
             program_text = (row or {}).get("program") or ""
             result = _call_llm(program_text)
             row["llm-generated-program"] = result["standardized_program"]
@@ -310,7 +310,11 @@ def _cli_process_file(
 
             json.dump(row, sink, ensure_ascii=False)
             sink.write("\n")
-            sink.flush()
+            if i % 50 == 0:
+                sink.flush()
+            
+        sink.flush()    
+            
     finally:
         if sink is not sys.stdout:
             sink.close()
