@@ -105,46 +105,87 @@ def parse_survey_page(html, limit=20):
 
 def parse_result_page(html):
     """
-    Parse ONE result (/result/xxxxxx) page.
-    We'll start by extracting the main text and pulling simple fields.
-    (We'll refine once we see the exact page structure.)
+    Parse ONE /result/ page.
+
+    We target the main content column:
+    div.tw-w-full.lg:tw-w-3/4.lg:tw-pr-8
+
+    Then we extract "Label Value" pairs from its text.
     """
     soup = BeautifulSoup(html, "html.parser")
-    page_text = soup.get_text(" ", strip=True)
 
-    # Very simple placeholder extraction using regex.
-    # These may return "" if not found (that's okay for now).
-    term = ""
-    m = re.search(r"\b(Spring|Summer|Fall|Winter)\s+\d{4}\b", page_text)
-    if m:
-        term = m.group(0)
+    main_div = soup.find("div", class_="tw-w-full")
+    # We'll be a bit safer by checking it contains the expected phrase
+    if not main_div:
+        return {
+            "term": "",
+            "Degree": "",
+            "US/International": "",
+            "GPA": "",
+            "comments_full": ""
+        }
 
-    degree = ""
-    m = re.search(r"\b(Masters|PhD|MFA|MA|MS|MBA|JD|MD)\b", page_text)
-    if m:
-        degree = m.group(0)
+    text = main_div.get_text(" ", strip=True)
 
+    # Helper: pull the value that comes after a label word.
+    def after_label(label, stop_labels):
+        if label not in text:
+            return ""
+        start = text.find(label) + len(label)
+        # cut off at the next label we recognize
+        remainder = text[start:].strip()
+        cut = len(remainder)
+        for s in stop_labels:
+            idx = remainder.find(s)
+            if idx != -1 and idx < cut:
+                cut = idx
+        return remainder[:cut].strip()
+
+    # These labels appeared in your candidate preview
+    # We'll use a "stop list" to avoid grabbing too much.
+    stop = [
+        "Institution", "Program", "Degree Type", "Degree's",
+        "GPA", "GRE", "Term", "Season", "Status", "Decision",
+        "Application Information", "Details", "Acceptance Rate"
+    ]
+
+    institution = after_label("Institution", stop)
+    program = after_label("Program", stop)
+    degree_type = after_label("Degree Type", stop)
+
+    # term: sometimes present as "Term" or "Season"
+    term = after_label("Term", stop)
+    if not term:
+        term = after_label("Season", stop)
+
+    # citizenship sometimes appears as "American" or "International"
     citizenship = ""
-    m = re.search(r"\b(American|International)\b", page_text)
-    if m:
-        citizenship = m.group(0)
+    if "International" in text:
+        citizenship = "International"
+    elif "American" in text:
+        citizenship = "American"
 
+    # GPA: look for "GPA" then a number nearby
     gpa = ""
-    m = re.search(r"\bGPA\s*[: ]\s*([0-4]\.\d{1,2})\b", page_text)
+    m = re.search(r"\bGPA\b[^0-9]*([0-4]\.\d{1,2})", text)
     if m:
         gpa = m.group(1)
 
-    # Comments: this is tricky because the site structure can vary.
-    # For now, grab a best-effort snippet by searching for common label words.
-    comments = ""
-    # If you find a better selector later, we'll replace this.
-    # This just prevents empty forever.
+    # Comments: sometimes not present at all
+    comments_full = ""
+    # If the word "Comments" exists, we can attempt to pull text after it
+    if "Comments" in text:
+        comments_full = after_label("Comments", stop)
+
     return {
         "term": term,
-        "Degree": degree,
+        "Degree": degree_type if degree_type else "",
         "US/International": citizenship,
         "GPA": gpa,
-        "comments_full": comments
+        "comments_full": comments_full,
+        # extra helpful fields you can merge back into your record later:
+        "institution_detail": institution,
+        "program_detail": program
     }
 
 
