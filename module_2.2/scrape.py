@@ -5,7 +5,7 @@ import urllib.robotparser
 import json
 from bs4 import BeautifulSoup
 import re
-
+import time
 
 BASE_URL = "https://www.thegradcafe.com"
 USER_AGENT = "Mozilla/5.0 (compatible; Module2Scraper/1.0)"
@@ -188,6 +188,42 @@ def parse_result_page(html):
         "program_detail": program
     }
 
+def enrich_with_detail(records, max_records=5, delay_seconds=1.0):
+    """
+    For each record (from survey page), fetch its /result/ page and merge extra fields.
+    Start with a small max_records for testing.
+    """
+    enriched = []
+
+    for i, rec in enumerate(records[:max_records]):
+        url = rec.get("url", "")
+        print(f"DETAIL {i+1}/{max_records}:", url)
+
+        # Respect robots for each detail URL (conservative)
+        if not check_robots(url):
+            print("  Skipped (robots disallow):", url)
+            enriched.append(rec)
+            continue
+
+        html = fetch_html(url)
+        if not html:
+            print("  Skipped (no html):", url)
+            enriched.append(rec)
+            continue
+
+        detail = parse_result_page(html)
+
+        # Merge: keep original fields + add detail fields
+        merged = dict(rec)
+        merged.update(detail)
+
+        enriched.append(merged)
+
+        # Polite delay so we don't hammer the site
+        time.sleep(delay_seconds)
+
+    return enriched
+
 
 def debug_result_page_structure(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -268,6 +304,14 @@ def scrape_one_page():
         json.dump(sample, f, ensure_ascii=False, indent=2)
 
     print("Saved:", "module_2.2/sample_applicant_data.json", "records:", len(sample))
+    
+        # Enrich a small subset with detail-page fields (start with 5)
+    enriched = enrich_with_detail(sample, max_records=5, delay_seconds=1.0)
+    with open("module_2.2/sample_applicant_data_with_detail.json", "w", encoding="utf-8") as f:
+        json.dump(enriched, f, ensure_ascii=False, indent=2)
+
+    print("Saved:", "module_2.2/sample_applicant_data_with_detail.json", "records:", len(enriched))
+
 
     # --- Detail-page test: fetch and parse ONE result page ---
     if len(sample) > 0:
