@@ -289,6 +289,21 @@ def save_data(path, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def load_progress(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return int(f.read().strip())
+    except FileNotFoundError:
+        return 1
+    except Exception:
+        return 1
+
+
+def save_progress(path, page_number):
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(str(page_number))
+
+
 def scrape_many_pages(target_records=500, start_page=1, max_pages=10, checkpoint_every_pages=2):
 
     """
@@ -296,6 +311,10 @@ def scrape_many_pages(target_records=500, start_page=1, max_pages=10, checkpoint
     Start small (e.g., 3 pages / 100 records) before scaling to 30,000.
     """
     output_path = "module_2.2/applicant_data.json"
+    progress_path = "module_2.2/progress.txt"
+    if start_page == 1:
+        start_page = load_progress(progress_path)
+        print("Resuming from page:", start_page)
 
     # Load existing data so you can resume
     existing = load_data(output_path)
@@ -331,6 +350,9 @@ def scrape_many_pages(target_records=500, start_page=1, max_pages=10, checkpoint
 
         print("Added from this page:", added)
         print("Total unique records:", len(by_url))
+        
+        save_progress(progress_path, page + 1)
+        print("Saved progress:", page + 1)
 
         # checkpoint save
         if page % checkpoint_every_pages == 0:
@@ -407,5 +429,4 @@ def scrape_one_page():
             print("Robots.txt does not allow fetching result page:", test_url)
 
 if __name__ == "__main__":
-    scrape_many_pages(target_records=999999, start_page=15, max_pages=15, checkpoint_every_pages=1)
-
+    scrape_many_pages(target_records=999999, start_page=1, max_pages=2, checkpoint_every_pages=1)
