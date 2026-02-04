@@ -4,6 +4,7 @@ import urllib.error
 import urllib.robotparser
 import json
 from bs4 import BeautifulSoup
+import re
 
 
 BASE_URL = "https://www.thegradcafe.com"
@@ -101,6 +102,87 @@ def parse_survey_page(html, limit=20):
 
     return records
 
+
+def parse_result_page(html):
+    """
+    Parse ONE result (/result/xxxxxx) page.
+    We'll start by extracting the main text and pulling simple fields.
+    (We'll refine once we see the exact page structure.)
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    page_text = soup.get_text(" ", strip=True)
+
+    # Very simple placeholder extraction using regex.
+    # These may return "" if not found (that's okay for now).
+    term = ""
+    m = re.search(r"\b(Spring|Summer|Fall|Winter)\s+\d{4}\b", page_text)
+    if m:
+        term = m.group(0)
+
+    degree = ""
+    m = re.search(r"\b(Masters|PhD|MFA|MA|MS|MBA|JD|MD)\b", page_text)
+    if m:
+        degree = m.group(0)
+
+    citizenship = ""
+    m = re.search(r"\b(American|International)\b", page_text)
+    if m:
+        citizenship = m.group(0)
+
+    gpa = ""
+    m = re.search(r"\bGPA\s*[: ]\s*([0-4]\.\d{1,2})\b", page_text)
+    if m:
+        gpa = m.group(1)
+
+    # Comments: this is tricky because the site structure can vary.
+    # For now, grab a best-effort snippet by searching for common label words.
+    comments = ""
+    # If you find a better selector later, we'll replace this.
+    # This just prevents empty forever.
+    return {
+        "term": term,
+        "Degree": degree,
+        "US/International": citizenship,
+        "GPA": gpa,
+        "comments_full": comments
+    }
+
+
+def debug_result_page_structure(html):
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Print the <title> so we know we're on the right page
+    title = soup.title.get_text(" ", strip=True) if soup.title else ""
+    print("RESULT PAGE TITLE:", title)
+
+    # Print the first few <h1>/<h2> headings (often near the main content)
+    headings = soup.find_all(["h1", "h2"])
+    for i, h in enumerate(headings[:5]):
+        print("HEADING", i, ":", h.get_text(" ", strip=True))
+
+    # Print candidate main containers by id/class
+    candidates = soup.find_all(["main", "article", "section", "div"])
+    printed = 0
+    for tag in candidates:
+        attrs = []
+        if tag.get("id"):
+            attrs.append(f"id={tag.get('id')}")
+        if tag.get("class"):
+            attrs.append("class=" + " ".join(tag.get("class")))
+
+        # Only show ones that have a lot of text (likely real content)
+        text = tag.get_text(" ", strip=True)
+        if len(text) < 300:
+            continue
+
+        print("CANDIDATE:", tag.name, " ".join(attrs))
+        print("TEXT PREVIEW:", text[:250])
+        print("---")
+        printed += 1
+        if printed >= 5:
+            break
+        
+    
 def debug_print_first_row_cells(html):
     soup = BeautifulSoup(html, "html.parser")
 
@@ -146,6 +228,26 @@ def scrape_one_page():
 
     print("Saved:", "module_2.2/sample_applicant_data.json", "records:", len(sample))
 
+    # --- Detail-page test: fetch and parse ONE result page ---
+    if len(sample) > 0:
+        test_url = sample[0]["url"]
+        if check_robots(test_url):
+            detail_html = fetch_html(test_url)
+            
+            with open("module_2.2/result_test.html", "w", encoding="utf-8") as f:
+                f.write(detail_html)
+            print("Saved:", "module_2.2/result_test.html")
+            debug_result_page_structure(detail_html)
+            
+            soup = BeautifulSoup(detail_html, "html.parser")
+            text_preview = soup.get_text(" ", strip=True)
+            print("DETAIL TEXT PREVIEW:", text_preview[:400])
+            
+            detail_fields = parse_result_page(detail_html)
+            print("DETAIL TEST URL:", test_url)
+            print("DETAIL FIELDS:", detail_fields)
+        else:
+            print("Robots.txt does not allow fetching result page:", test_url)
 
 if __name__ == "__main__":
     scrape_one_page()
