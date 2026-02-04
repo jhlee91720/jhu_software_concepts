@@ -428,5 +428,6 @@ def scrape_one_page():
         else:
             print("Robots.txt does not allow fetching result page:", test_url)
 
+    
 if __name__ == "__main__":
-    scrape_many_pages(target_records=999999, start_page=1, max_pages=2, checkpoint_every_pages=1)
+    scrape_many_pages(target_records=30000, start_page=1, max_pages=2000, checkpoint_every_pages=10)
