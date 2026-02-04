@@ -45,7 +45,7 @@ def fetch_html(url):
         return ""
 
 
-def parse_survey_page(html, limit=20):
+def parse_survey_page(html, limit=None):
     """
     Parse one survey page and extract structured fields from table rows.
     Based on debug output: each row has 5 <td> cells:
@@ -94,7 +94,7 @@ def parse_survey_page(html, limit=20):
         }
 
         records.append(record)
-        if len(records) >= limit:
+        if limit is not None and len(records) >= limit:
             break
 
     return records
@@ -316,7 +316,7 @@ def scrape_many_pages(target_records=500, start_page=1, max_pages=10, checkpoint
             print("No HTML for page:", page)
             continue
 
-        new_records = parse_survey_page(html, limit=1000)  # get all rows on that page
+        new_records = parse_survey_page(html, limit=None)  # get all rows on that page
         print("Parsed records from page:", len(new_records))
         added = 0
         
