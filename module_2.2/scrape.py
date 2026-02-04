@@ -46,47 +46,76 @@ def fetch_html(url):
 
 def parse_survey_page(html, limit=20):
     """
-    Requirement C (first pass): parse one survey page and extract result links.
-    We'll start simple: collect the /result/ links and row text.
+    Parse one survey page and extract structured fields from table rows.
+    Based on debug output: each row has 5 <td> cells:
+      0 university, 1 program/degree text, 2 date, 3 decision/status, 4 comments/ui
     """
     soup = BeautifulSoup(html, "html.parser")
 
     records = []
     seen = set()
 
-    # Find all <a> tags with an href, and keep only /result/ links
-    for a in soup.find_all("a", href=True):
-        href = a["href"].strip()
+    for tr in soup.find_all("tr"):
+        tds = tr.find_all("td")
+        if len(tds) != 5:
+            continue
 
+        # Find the /result/ link in this row
+        a = tr.find("a", href=True)
+        if not a:
+            continue
+
+        href = a["href"].strip()
         if not href.startswith("/result/"):
             continue
 
         full_url = urllib.parse.urljoin(BASE_URL, href)
-
-        # Deduplicate
         if full_url in seen:
             continue
         seen.add(full_url)
 
-        # Try to capture full row text (usually in the <tr>)
-        tr = a.find_parent("tr")
-        if tr:
-            row_text = tr.get_text(" ", strip=True)
-        else:
-            row_text = a.get_text(" ", strip=True)
+        university = tds[0].get_text(" ", strip=True)
+        program_text = tds[1].get_text(" ", strip=True)
+        date_added = tds[2].get_text(" ", strip=True)
+        status = tds[3].get_text(" ", strip=True)
+
+        # This cell contains UI words; keep a cleaned version for now
+        comments_cell = tds[4].get_text(" ", strip=True)
+        # remove common UI fragments
+        for junk in ["Total comments", "Open options", "See More", "Report"]:
+            comments_cell = comments_cell.replace(junk, "")
+        comments = comments_cell.strip()
 
         record = {
-            "program": row_text,   # raw combined text for now
-            "url": full_url
+            "program": program_text,          # matches professor tool input key name
+            "university": university,         # useful even before LLM cleaning
+            "date_added": date_added,
+            "url": full_url,
+            "status": status,
+            "comments": comments
         }
-        records.append(record)
 
+        records.append(record)
         if len(records) >= limit:
             break
 
     return records
 
+def debug_print_first_row_cells(html):
+    soup = BeautifulSoup(html, "html.parser")
 
+    # Find the first table row that actually has <td> cells
+    for tr in soup.find_all("tr"):
+        tds = tr.find_all("td")
+        if len(tds) == 0:
+            continue
+
+        print("FOUND A ROW WITH", len(tds), "CELLS")
+        for i, td in enumerate(tds):
+            text = td.get_text(" ", strip=True)
+            print("CELL", i, ":", text)
+        break
+        
 def scrape_one_page():
     """
     First test: download ONE survey page and save html locally.
@@ -101,6 +130,8 @@ def scrape_one_page():
     if not html:
         print("No HTML downloaded.")
         return
+    
+    debug_print_first_row_cells(html)
 
     # Save raw html so you can inspect it and debug parsing.
     with open("module_2.2/survey_page_1.html", "w", encoding="utf-8") as f:
