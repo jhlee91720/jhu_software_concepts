@@ -1,61 +1,32 @@
 1. Name:
-   Joohyun Lee, [YOUR JHED ID]
-
+    Joo Hyun Lee (jlee887)
+  
 2. Module Info:
-   Module 2 - Web Scraping, URL Management, and LLM Data Cleaning
-   Due Date: [DUE DATE FROM SYLLABUS / ASSIGNMENT PAGE]
+    Module 2: Web Scraping, URL Management, and LLM Data Cleaning
 
 3. Approach:
-   - Robots.txt compliance:
-     I used urllib.robotparser to fetch and check robots.txt for thegradcafe.com before scraping any pages.
-     I verified can_fetch() for the pages I scraped. Evidence is included as screenshot.jpg.
-
-   - Scraping (urllib + BeautifulSoup/regex/string methods):
-     I used urllib.request.urlopen to download GradCafe survey pages and (when needed) individual result pages.
-     I used urllib.parse.urljoin/urlparse for URL management.
-     I used BeautifulSoup and string/regex parsing to extract required fields such as:
-       program (raw combined program+university text), date_added, url, status, term, degree,
-       US/International, comments, and GRE/GPA fields when available.
-     The raw scraped output is stored as JSON under applicant_data.json in this folder.
-
-   - Cleaning (local LLM standardizer):
-     I used the provided llm_hosting sub-package to run a small local language model to standardize program and university names.
-     The tool adds two fields: llm-generated-program and llm-generated-university.
-     I then mapped these standardized values into clean program_name and university fields for analysis.
-
-   - Efficiency / parallelization:
-     To reduce total cleaning time, I split the dataset into multiple JSON chunks and ran 4–5 parallel runs of the standardizer,
-     then merged the outputs back into a single cleaned JSON.
-
-4. Known Bugs:
-   [If none, write: "None known at submission time."]1. Name:
-   Joohyun Lee, [YOUR JHED ID]
-
-2. Module Info:
-   Module 2 - Web Scraping, URL Management, and LLM Data Cleaning
-   Due Date: [DUE DATE FROM SYLLABUS / ASSIGNMENT PAGE]
-
-3. Approach:
-   - Robots.txt compliance:
-     I used urllib.robotparser to fetch and check robots.txt for thegradcafe.com before scraping any pages.
-     I verified can_fetch() for the pages I scraped. Evidence is included as screenshot.jpg.
-
-   - Scraping (urllib + BeautifulSoup/regex/string methods):
-     I used urllib.request.urlopen to download GradCafe survey pages and (when needed) individual result pages.
-     I used urllib.parse.urljoin/urlparse for URL management.
-     I used BeautifulSoup and string/regex parsing to extract required fields such as:
-       program (raw combined program+university text), date_added, url, status, term, degree,
-       US/International, comments, and GRE/GPA fields when available.
-     The raw scraped output is stored as JSON under applicant_data.json in this folder.
-
-   - Cleaning (local LLM standardizer):
-     I used the provided llm_hosting sub-package to run a small local language model to standardize program and university names.
-     The tool adds two fields: llm-generated-program and llm-generated-university.
-     I then mapped these standardized values into clean program_name and university fields for analysis.
-
-   - Efficiency / parallelization:
-     To reduce total cleaning time, I split the dataset into multiple JSON chunks and ran 4–5 parallel runs of the standardizer,
-     then merged the outputs back into a single cleaned JSON.
-
-4. Known Bugs:
-   [If none, write: "None known at submission time."]
+    A. Robots.txt compliance
+        - sed urllib.robotparser.RobotFileParser to fetch and parse https://www.thegradcafe.com/robots.txt.
+        - Verified can_fetch() before scraping survey/result pages.
+        - Evidence screenshot included: screenshot.png (or your exact filename).
+    B. Scraping (urllib + BeautifulSoup/regext/string methodds)
+        - Used urllib.request.Request / urllib.request.urlopen to download GradCafe survey pages with a User-Agent header.
+        - Used urllib.parse.urljoin for URL construction.
+        - Parsed survey pages with BeautifulSoup and string/regex parsing to extract fields.
+        - Stored raw scraped output as JSON: module_2.2/applicant_data.json (≥ 30,000 records; mine: 30020).
+    C. Cleaning/Standardization (local LLM)
+        - Used the provided llm_hosting/app.py local model standardizer to normalize program and university names.
+        - The LLM adds:
+          * llm-generated-program
+          * llm-generated-university
+        - LLM intermediate outputs:
+          * module_2.2/out_00.jsonl … out_04.jsonl
+          * merged: module_2.2/out_all.jsonl
+    D. Final cleaned dataset 
+        - Converted the merged JSONL output into a final JSON dataset.
+        - Final cleaned output file: module_2.2/final_applicant_data.json
+        - This file uses the standardized program/university from the LLM fields where available.
+    E. Efficiency / parallelization
+        - Converted the merged JSONL output into a final JSON dataset.
+        - Final cleaned output file: module_2.2/final_applicant_data.json
+        - This file uses the standardized program/university from the LLM fields where available.
