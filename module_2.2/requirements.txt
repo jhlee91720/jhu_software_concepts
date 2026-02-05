@@ -1,0 +1,4 @@
+beautifulsoup4==4.14.3
+
+pip install -r module_2.2/requirements.txt
+For LLM: pip install -r module_2.2/llm_hosting/requirements.txt
