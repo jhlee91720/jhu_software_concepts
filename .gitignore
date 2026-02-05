@@ -20,3 +20,9 @@ module_2/raw_survey_page.html
 # Error logs (do NOT push)
 *.err
 module_2/out_*.err
+
+
+module_2.2/out_*.jsonl
+module_2.2/out_all.jsonl
+module_2.2/llm_chunks/
+module_2.2/progress.txt
