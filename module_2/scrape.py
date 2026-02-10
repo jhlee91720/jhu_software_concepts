@@ -310,8 +310,8 @@ def scrape_many_pages(target_records=500, start_page=1, max_pages=10, checkpoint
     Scrape multiple survey pages, dedupe by URL, and save progress to applicant_data.json.
     Start small (e.g., 3 pages / 100 records) before scaling to 30,000.
     """
-    output_path = "module_2.2/applicant_data.json"
-    progress_path = "module_2.2/progress.txt"
+    output_path = "module_2/applicant_data.json"
+    progress_path = "module_2/progress.txt"
     if start_page == 1:
         start_page = load_progress(progress_path)
         print("Resuming from page:", start_page)
@@ -386,24 +386,24 @@ def scrape_one_page():
     debug_print_first_row_cells(html)
 
     # Save raw html so you can inspect it and debug parsing.
-    with open("module_2.2/survey_page_1.html", "w", encoding="utf-8") as f:
+    with open("module_2/survey_page_1.html", "w", encoding="utf-8") as f:
         f.write(html)
 
-    print("Saved:", "module_2.2/survey_page_1.html")
+    print("Saved:", "module_2/survey_page_1.html")
     
      # Parse a small sample of rows and save as JSON
     sample = parse_survey_page(html, limit=20)
-    with open("module_2.2/sample_applicant_data.json", "w", encoding="utf-8") as f:
+    with open("module_2/sample_applicant_data.json", "w", encoding="utf-8") as f:
         json.dump(sample, f, ensure_ascii=False, indent=2)
 
-    print("Saved:", "module_2.2/sample_applicant_data.json", "records:", len(sample))
+    print("Saved:", "module_2/sample_applicant_data.json", "records:", len(sample))
     
         # Enrich a small subset with detail-page fields (start with 5)
     enriched = enrich_with_detail(sample, max_records=20, delay_seconds=1.0)
-    with open("module_2.2/sample_applicant_data_with_detail_20.json", "w", encoding="utf-8") as f:
+    with open("module_2/sample_applicant_data_with_detail_20.json", "w", encoding="utf-8") as f:
         json.dump(enriched, f, ensure_ascii=False, indent=2)
 
-    print("Saved:", "module_2.2/sample_applicant_data_with_detail_20.json", "records:", len(enriched))
+    print("Saved:", "module_2/sample_applicant_data_with_detail_20.json", "records:", len(enriched))
 
 
 
@@ -413,9 +413,9 @@ def scrape_one_page():
         if check_robots(test_url):
             detail_html = fetch_html(test_url)
             
-            with open("module_2.2/result_test.html", "w", encoding="utf-8") as f:
+            with open("module_2/result_test.html", "w", encoding="utf-8") as f:
                 f.write(detail_html)
-            print("Saved:", "module_2.2/result_test.html")
+            print("Saved:", "module_2/result_test.html")
             debug_result_page_structure(detail_html)
             
             soup = BeautifulSoup(detail_html, "html.parser")
