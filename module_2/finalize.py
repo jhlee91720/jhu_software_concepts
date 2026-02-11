@@ -70,8 +70,8 @@ def finalize_rows(rows):
 
 
 if __name__ == "__main__":
-    src = "module_2.2/llm_cleaned_applicant_data.json"
-    dst = "module_2.2/final_applicant_data.json"
+    src = "module_2/llm_cleaned_applicant_data.json"
+    dst = "module_2/final_applicant_data.json"
 
     rows = load_json(src)
     final_rows = finalize_rows(rows)

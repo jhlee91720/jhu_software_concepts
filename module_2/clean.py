@@ -39,8 +39,8 @@ def save_data(path, data):
 
 
 if __name__ == "__main__":
-    src = "module_2.2/applicant_data.json"
-    dst = "module_2.2/cleaned_applicant_data.json"
+    src = "module_2/applicant_data.json"
+    dst = "module_2/cleaned_applicant_data.json"
 
     rows = load_data(src)
     cleaned = clean_data(rows)

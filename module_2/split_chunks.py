@@ -13,8 +13,8 @@ def save_data(path, data):
 
 
 if __name__ == "__main__":
-    src = "module_2.2/cleaned_applicant_data.json"
-    out_dir = "module_2.2/llm_chunks"
+    src = "module_2/cleaned_applicant_data.json"
+    out_dir = "module_2/llm_chunks"
     os.makedirs(out_dir, exist_ok=True)
 
     rows = load_data(src)

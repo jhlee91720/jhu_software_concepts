@@ -18,8 +18,8 @@ def save_json(path, data):
 
 
 if __name__ == "__main__":
-    src = "module_2.2/out_all.jsonl"
-    dst = "module_2.2/llm_cleaned_applicant_data.json"
+    src = "module_2/out_all.jsonl"
+    dst = "module_2/llm_cleaned_applicant_data.json"
 
     rows = jsonl_to_list(src)
     save_json(dst, rows)
