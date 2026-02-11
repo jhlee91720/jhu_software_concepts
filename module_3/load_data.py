@@ -73,6 +73,8 @@ def main():
                         llm_generated_university
                     )
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (url) DO NOTHING
+
                 """, (
                     clean_text(obj.get("program")),
                     clean_text(obj.get("comments")),

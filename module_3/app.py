@@ -1,7 +1,11 @@
 from flask import Flask, render_template, redirect, url_for
 import psycopg
+import subprocess
 
 app = Flask(__name__, template_folder="templates")
+
+PULL_RUNNING = False
+LAST_MESSAGE = None
 
 def get_conn():
     return psycopg.connect("dbname=gradcafe")
@@ -86,9 +90,6 @@ def is_target_university_llm(university_text):
         return True
 
     return False
-
-
-
 
 
 def build_results():
@@ -358,37 +359,40 @@ def build_results():
 @app.route("/")
 def analysis():
     results = build_results()
-    return render_template("analysis.html", results=results, message=None)
+    global LAST_MESSAGE
+    message = LAST_MESSAGE
+    LAST_MESSAGE = None
+    return render_template("analysis.html", results=results, message=message)
 
-
-    # Q1: How many entries applied for Fall 2026?
-    cur.execute("""
-        SELECT COUNT(*)
-        FROM applicants
-        WHERE term = %s;
-    """, ("Fall 2026",))
-    count_fall_2026 = cur.fetchone()[0]
-
-    cur.close()
-    conn.close()
-
-    results = [
-        {
-            "question": "How many entries do you have in your database who have applied for Fall 2026?",
-            "answer": f"Applicant count: {count_fall_2026}"
-        }
-    ]
-
-    return render_template("analysis.html", results=results, message=None)
 
 @app.route("/pull_data", methods=["POST"])
 def pull_data():
-    # placeholder for now
+    global PULL_RUNNING, LAST_MESSAGE
+
+    if PULL_RUNNING:
+        LAST_MESSAGE = "Pull Data is already running. Please wait."
+        return redirect(url_for("analysis"))
+
+    PULL_RUNNING = True
+    try:
+        # TODO: call module_2 scraping + load into DB
+        LAST_MESSAGE = "Pull Data completed (placeholder)."
+    except Exception as e:
+        LAST_MESSAGE = f"Pull Data failed: {e}"
+    finally:
+        PULL_RUNNING = False
+
     return redirect(url_for("analysis"))
 
 @app.route("/update_analysis", methods=["POST"])
 def update_analysis():
-    # placeholder for now
+    global PULL_RUNNING, LAST_MESSAGE
+
+    if PULL_RUNNING:
+        LAST_MESSAGE = "Update Analysis skipped because Pull Data is running."
+        return redirect(url_for("analysis"))
+
+    LAST_MESSAGE = "Analysis updated."
     return redirect(url_for("analysis"))
 
 
