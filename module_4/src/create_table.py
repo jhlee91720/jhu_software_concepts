@@ -1,31 +1,36 @@
 import os
 import psycopg
 
-def main():
+def get_conn():
+    # Use DATABASE_URL if present (GitHub Actions), otherwise fall back to local
     db_url = os.getenv("DATABASE_URL", "dbname=gradcafe")
-    with psycopg.connect(db_url) as conn:
+    return psycopg.connect(db_url)
+
+def create_tables():
+    with get_conn() as conn:
         with conn.cursor() as cur:
+            # idempotent: re-create cleanly each run
             cur.execute("DROP TABLE IF EXISTS applicants;")
+
             cur.execute("""
-            CREATE TABLE applicants (
-                p_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                program TEXT,
-                comments TEXT,
-                date_added DATE,
-                url TEXT,
-                status TEXT,
-                term TEXT,
-                us_or_international TEXT,
-                gpa FLOAT,
-                gre FLOAT,
-                gre_v FLOAT,
-                gre_aw FLOAT,
-                degree TEXT,
-                llm_generated_program TEXT,
-                llm_generated_university TEXT
-            );
+                CREATE TABLE applicants (
+                    id SERIAL PRIMARY KEY,
+                    program TEXT NOT NULL,
+                    url TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL,
+
+                    term TEXT,
+                    us_or_international TEXT,
+                    gpa DOUBLE PRECISION,
+                    gre DOUBLE PRECISION,
+                    gre_v DOUBLE PRECISION,
+                    gre_aw DOUBLE PRECISION,
+                    degree TEXT,
+                    year INTEGER
+                );
             """)
+
         conn.commit()
 
 if __name__ == "__main__":
-    main()
+    create_tables()
