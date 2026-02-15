@@ -1,4 +1,0 @@
-Flask
-psycopg[binary]
-pytest
-pytest-cov
