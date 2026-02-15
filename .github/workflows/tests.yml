@@ -41,6 +41,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov
+      
+      - name: Create DB schema
+        working-directory: module_4
+        run: |
+          python src/create_table.py
 
       - name: Run tests
         working-directory: module_4
