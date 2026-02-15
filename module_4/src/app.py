@@ -55,7 +55,8 @@ def create_app():
     return app
 
 def get_conn():
-    return psycopg.connect("dbname=gradcafe")
+    db_url = os.getenv("DATABASE_URL", "dbname=gradcafe")
+    return psycopg.connect(db_url)
 
 def normalize_text(s):
     if not s:
