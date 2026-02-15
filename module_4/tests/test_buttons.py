@@ -21,6 +21,9 @@ def test_post_pull_data_returns_200_and_loads_rows():
 
     response = app.test_client().post("/pull-data")
     assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["ok"] is True
+    assert payload["busy"] is False
     assert len(conn.rows) == 2
 
 
@@ -28,6 +31,9 @@ def test_post_pull_data_returns_200_and_loads_rows():
 def test_post_update_analysis_returns_200_when_not_busy(app):
     response = app.test_client().post("/update-analysis")
     assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["ok"] is True
+    assert payload["busy"] is False
 
 
 @pytest.mark.buttons
@@ -50,6 +56,8 @@ def test_update_analysis_returns_409_and_does_nothing_when_busy():
 
     response = app.test_client().post("/update-analysis")
     assert response.status_code == 409
+    payload = response.get_json()
+    assert payload["busy"] is True
     assert called["count"] == 0
 
 
@@ -58,3 +66,5 @@ def test_pull_data_returns_409_when_busy(app):
     app.config["PULL_IN_PROGRESS"] = True
     response = app.test_client().post("/pull-data")
     assert response.status_code == 409
+    payload = response.get_json()
+    assert payload["busy"] is True

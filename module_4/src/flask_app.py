@@ -53,7 +53,7 @@ def create_app(conn_factory=None, scraper=None, loader=None, query_builder=None)
     @app.post("/pull-data")
     def pull_data():
         if current_app.config["PULL_IN_PROGRESS"]:
-            return jsonify({"message": "Pull already running"}), 409
+            return jsonify({"ok": False, "busy": True, "message": "Pull already running"}), 409
 
         current_app.config["PULL_IN_PROGRESS"] = True
         conn = None
@@ -63,9 +63,9 @@ def create_app(conn_factory=None, scraper=None, loader=None, query_builder=None)
             rows = scraper()
             inserted = loader(conn, rows)
             current_app.config["ANALYSIS_RESULTS"] = query_builder(conn)
-            return jsonify({"message": "Pull complete", "inserted": inserted}), 200
+            return jsonify({"ok": True, "busy": False, "inserted": inserted, "message": "Pull complete"}), 200
         except Exception as exc:
-            return jsonify({"message": f"Pull failed: {exc}"}), 500
+            return jsonify({"ok": False, "busy": False, "message": f"Pull failed: {exc}"}), 500
         finally:
             _close_quietly(conn)
             current_app.config["PULL_IN_PROGRESS"] = False
@@ -73,16 +73,16 @@ def create_app(conn_factory=None, scraper=None, loader=None, query_builder=None)
     @app.post("/update-analysis")
     def update_analysis():
         if current_app.config["PULL_IN_PROGRESS"]:
-            return jsonify({"message": "Update blocked while pull is running"}), 409
+            return jsonify({"ok": False, "busy": True, "message": "Update blocked while pull is running"}), 409
 
         conn = None
         try:
             conn = conn_factory()
             load_data.create_table(conn)
             current_app.config["ANALYSIS_RESULTS"] = query_builder(conn)
-            return jsonify({"message": "Analysis updated"}), 200
+            return jsonify({"ok": True, "busy": False, "message": "Analysis updated"}), 200
         except Exception as exc:
-            return jsonify({"message": f"Update failed: {exc}"}), 500
+            return jsonify({"ok": False, "busy": False, "message": f"Update failed: {exc}"}), 500
         finally:
             _close_quietly(conn)
 

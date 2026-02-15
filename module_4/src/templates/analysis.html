@@ -7,10 +7,10 @@
 
 <div style="display:flex; gap:16px; margin-bottom:16px;">
   <form method="post" action="{{ url_for('pull_data') }}">
-    <button type="submit">Pull Data</button>
+    <button type="submit" data-testid="pull-data-btn">Pull Data</button>
   </form>
   <form method="post" action="{{ url_for('update_analysis') }}">
-    <button type="submit">Update Analysis</button>
+    <button type="submit" data-testid="update-analysis-btn">Update Analysis</button>
   </form>
 </div>
 
