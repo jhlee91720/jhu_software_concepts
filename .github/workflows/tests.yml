@@ -50,4 +50,4 @@ jobs:
       - name: Run tests
         working-directory: module_4
         run: |
-          pytest -m "web or buttons or analysis or db or integration"
+          PYTHONPATH=. pytest -m "web or buttons or analysis or db or integration"
