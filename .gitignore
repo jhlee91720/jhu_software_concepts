@@ -24,3 +24,7 @@ module_2/out_*.err
 
 module_2.2/llm_chunks/
 module_2.2/progress.txt
+
+.coverage
+htmlcov/
+.coverage.*
