@@ -45,7 +45,7 @@ jobs:
       - name: Create DB schema
         working-directory: module_4
         run: |
-          python src/create_table.py
+          python -m src.create_table
 
       - name: Run tests
         working-directory: module_4
