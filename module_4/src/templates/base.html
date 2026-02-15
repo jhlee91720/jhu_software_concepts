@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}{% endblock %} - Grad Cafe</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    nav a { color: #1f4f7a; font-size: 28px; text-decoration: none; }
+    .answer { margin: 8px 0 24px 0; }
+  </style>
+</head>
+<body>
+  <nav><a href="{{ url_for('analysis') }}">GradCafe Analysis</a></nav>
+  <hr>
+  {% block content %}{% endblock %}
+</body>
+</html>

@@ -16,6 +16,7 @@ module_2/llm_hosting/models/
 # Raw HTML (do NOT push)
 *.html
 module_2/raw_survey_page.html
+!module_4/src/templates/*.html
 
 # Error logs (do NOT push)
 *.err
