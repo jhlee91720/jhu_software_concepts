@@ -2,6 +2,7 @@ from flask import Flask, render_template, redirect, url_for, jsonify, request
 import psycopg
 import subprocess
 import os
+import uuid
 
 def create_app():
     app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), "templates"))
@@ -30,8 +31,31 @@ def create_app():
                 return redirect(url_for("analysis"))
             else:
                 return jsonify({"busy": True}), 409
-
         app.config["PULL_RUNNING"] = True
+        
+        if app.config.get("TESTING"):
+
+            # create unique test URL only once per test run
+            if "TEST_URL" not in app.config:
+                app.config["TEST_URL"] = f"http://example.com/test-url-{uuid.uuid4()}"
+
+            test_url = app.config["TEST_URL"]
+
+            with get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        INSERT INTO applicants (program, url, status)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (url) DO NOTHING;
+                        """,
+                        ("TEST_PROGRAM", test_url, "TEST_STATUS")
+                    )
+                conn.commit()
+
+            app.config["LAST_MESSAGE"] = "Pull Data completed (test insert)."
+
+        
         try:
             app.config["LAST_MESSAGE"] = "Pull Data completed (placeholder)."
         except Exception as e:
@@ -150,6 +174,10 @@ def is_target_university_llm(university_text):
 
     return False
 
+def fmt_avg(x):
+    return "N/A" if x is None else f"{x:.2f}"
+
+
 def build_results():
     conn = get_conn()
     cur = conn.cursor()
@@ -192,7 +220,7 @@ def build_results():
 
     results.append({
         "question": "What percentage of entries are from international students (not American or Other) (to two decimal places)?",
-        "answer": f"Percent International: {percent_international:.2f}"
+        "answer": f"Percent International: {percent_international:.2f}%%"
     })
     
     
@@ -213,11 +241,12 @@ def build_results():
     results.append({
         "question": "What is the average GPA, GRE, GRE V, GRE AW of applicants who provide these metrics?",
         "answer": (
-            f"Average GPA: {avg_gpa:.2f}, "
-            f"Average GRE: {avg_gre:.2f}, "
-            f"Average GRE-V: {avg_gre_v:.2f}, "
-            f"Average GRE-AW: {avg_gre_aw:.2f}"
+            f"Average GPA: {fmt_avg(avg_gpa)}, "
+            f"Average GRE: {fmt_avg(avg_gre)}, "
+            f"Average GRE-V: {fmt_avg(avg_gre_v)}, "
+            f"Average GRE-AW: {fmt_avg(avg_gre_aw)}"
         )
+
     })
 
 
@@ -235,7 +264,7 @@ def build_results():
 
     results.append({
         "question": "What is the average GPA of American students in Fall 2026?",
-        "answer": f"Average GPA (American, Fall 2026): {avg_gpa_american:.2f}"
+        "answer": f"Average GPA (American, Fall 2026): {fmt_avg(avg_gpa_american)}"
     })
 
 
@@ -262,7 +291,8 @@ def build_results():
 
     results.append({
         "question": "What percent of entries for Fall 2026 are Acceptances (to two decimal places)?",
-        "answer": f"Percent Accepted (Fall 2026): {percent_accepted:.2f}"
+        "answer": f"Percent Accepted (Fall 2026): {percent_accepted:.2f}%"
+
     })
 
 
@@ -280,7 +310,7 @@ def build_results():
 
     results.append({
         "question": "What is the average GPA of applicants who have applied for Fall 2026 who are Acceptances?",
-        "answer": f"Average GPA (Accepted, Fall 2026): {avg_gpa_accepted:.2f}"
+        "answer": f"Average GPA (Accepted, Fall 2026): {fmt_avg(avg_gpa_accepted)}"
     })
 
 
@@ -369,7 +399,7 @@ def build_results():
     # Build a clean answer string
     parts = []
     for group, avg_gpa in rows:
-        parts.append(f"{group}: {avg_gpa:.2f}")
+        parts.append(f"{group}: {fmt_avg(avg_gpa)}")
     q10_answer = ", ".join(parts)
 
     results.append({
@@ -399,7 +429,7 @@ def build_results():
         rate = 0.0
         if total_count:
             rate = (accepted_count / total_count) * 100
-        parts.append(f"{degree}: {rate:.2f}%")
+        parts.append(f"{degree}: {fmt_avg(rate)}%")
     q11_answer = ", ".join(parts)
 
     results.append({
