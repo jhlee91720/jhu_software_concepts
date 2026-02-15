@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, jsonify
+from flask import Flask, render_template, redirect, url_for, jsonify, request
 import psycopg
 import subprocess
 import os
@@ -26,7 +26,10 @@ def create_app():
 
         if app.config["PULL_RUNNING"]:
             app.config["LAST_MESSAGE"] = "Pull Data is already running. Please wait."
-            return jsonify({"busy": True}), 409
+            if "text/html" in request.headers.get("Accept", ""):
+                return redirect(url_for("analysis"))
+            else:
+                return jsonify({"busy": True}), 409
 
         app.config["PULL_RUNNING"] = True
         try:
@@ -36,7 +39,13 @@ def create_app():
         finally:
             app.config["PULL_RUNNING"] = False
 
-        return jsonify({"ok": True}), 202
+        if "text/html" in request.headers.get("Accept", ""):
+            return redirect(url_for("analysis"))
+        else:
+            return jsonify({"ok": True}), 202
+
+    
+    
 
 
 
@@ -45,11 +54,17 @@ def create_app():
 
         if app.config["PULL_RUNNING"]:
             app.config["LAST_MESSAGE"] = "Update Analysis skipped because Pull Data is running."
-            return jsonify({"busy": True}), 409
+            if "text/html" in request.headers.get("Accept", ""):
+                return redirect(url_for("analysis"))
+            else:
+                return jsonify({"busy": True}), 409
 
 
         app.config["LAST_MESSAGE"] = "Analysis updated."
-        return jsonify({"ok": True}), 200
+        if "text/html" in request.headers.get("Accept", ""):
+            return redirect(url_for("analysis"))
+        else:
+            return jsonify({"ok": True}), 200
 
     
     return app
